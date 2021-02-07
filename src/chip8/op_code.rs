@@ -8,27 +8,34 @@ pub enum OpCode {
     Jump(u16),
     LoadIndex(u16),
     Random(VRegister, u8),
+    LoadDecimal(VRegister),
 }
 
 impl TryFrom<[u8; 2]> for OpCode {
     type Error = String;
 
     fn try_from(bytes: [u8; 2]) -> Result<Self, Self::Error> {
-        let bytes: u16 = ((bytes[0] as u16) << 8) | bytes[1] as u16;
-
         match bytes {
-            0x00E0 => Ok(OpCode::Cls),
-            // TODO: Is the first 1 part of the jump address?
-            0x1000..=0x1FFF => Ok(OpCode::Jump(bytes)),
-            0xA000..=0xAFFF => Ok(OpCode::LoadIndex(bytes & 0x0FFF)),
-            0xC000..=0xCFFF => {
-                let register = VRegister::try_from((bytes >> 8 & 0xF) as u8);
-                let k = bytes as u8;
-                Ok(OpCode::Random(register.unwrap(), k))
+            [0x00, 0xE0] => Ok(OpCode::Cls),
+            [msb, _] if (0x10..=0x1F).contains(&msb) => Ok(OpCode::Jump(pack_u8(bytes))),
+            [msb, _] if (0xA0..=0xAF).contains(&msb) => {
+                Ok(OpCode::LoadIndex(pack_u8(bytes) & 0x0FFF))
             }
-            _ => Err(format!("Invalid OpCode {:#04x}", bytes)),
+            [msb, lsb] if (0xC0..=0xCF).contains(&msb) => {
+                let register = VRegister::try_from(msb & 0xF).unwrap();
+                Ok(OpCode::Random(register, lsb))
+            }
+            [msb, 0x33] if (0xF0..=0xFF).contains(&msb) => {
+                let register = VRegister::try_from(msb & 0xF).unwrap();
+                Ok(OpCode::LoadDecimal(register))
+            }
+            _ => Err(format!("Invalid OpCode {:#02x}{:02x}", bytes[0], bytes[1])),
         }
     }
+}
+
+fn pack_u8(value: [u8; 2]) -> u16 {
+    ((value[0] as u16) << 8) | value[1] as u16
 }
 
 #[cfg(test)]
@@ -57,7 +64,12 @@ mod tests {
     #[test]
     fn parse_random_byte() {
         let op_code = OpCode::try_from([0xc2, 0x12]).unwrap();
-        println!("{:?}", op_code);
         assert!(matches!(op_code, OpCode::Random(VRegister::V2, 0x12)));
+    }
+
+    #[test]
+    fn parse_load_decimal() {
+        let op_code = OpCode::try_from([0xf2, 0x33]).unwrap();
+        assert!(matches!(op_code, OpCode::LoadDecimal(VRegister::V2)));
     }
 }

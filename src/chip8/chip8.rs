@@ -42,6 +42,17 @@ impl Chip8 {
                     self.v_registers.set(register, k & rng.gen_range(0..=0xFF))
                 }
                 OpCode::LoadIndex(value) => self.index = value,
+                OpCode::LoadDecimal(register) => {
+                    let value = self.v_registers.get(register);
+
+                    let hundreds = value / 100;
+                    let tens = value / 10 % 10;
+                    let ones = value % 10;
+
+                    self.memory.set(self.index, hundreds);
+                    self.memory.set(self.index + 1, tens);
+                    self.memory.set(self.index + 2, ones);
+                }
             }
         }
     }
@@ -68,6 +79,8 @@ impl Chip8 {
 
 #[cfg(test)]
 mod tests {
+    use crate::chip8::registers::VRegister;
+
     use super::*;
 
     #[test]
@@ -76,5 +89,16 @@ mod tests {
         chip8.load(vec![0xA1, 0x23].into_iter());
         chip8.run();
         assert_eq!(chip8.index, 0x0123);
+    }
+
+    #[test]
+    fn test_load_binary() {
+        let mut chip8 = Chip8::new();
+        chip8.v_registers.set(VRegister::V2, 234);
+        chip8.load(vec![0xA0, 0xFB, 0xF2, 0x33].into_iter());
+        chip8.run();
+        assert_eq!(chip8.memory.get(0x0FB), 2);
+        assert_eq!(chip8.memory.get(0x0FC), 3);
+        assert_eq!(chip8.memory.get(0x0FD), 4);
     }
 }

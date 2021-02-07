@@ -4,6 +4,11 @@ use std::convert::TryFrom;
 pub struct Registers([u8; 16]);
 
 impl Registers {
+    pub fn get(&self, register: VRegister) -> u8 {
+        let index: usize = register.into();
+        self.0[index]
+    }
+
     pub fn set(&mut self, register: VRegister, value: u8) {
         let index: usize = register.into();
         self.0[index] = value;
