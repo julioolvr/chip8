@@ -1,8 +1,10 @@
+use rand::prelude::*;
 use std::convert::TryFrom;
 
 use super::FrameBuffer;
 use super::Memory;
 use super::OpCode;
+use super::Registers;
 
 #[derive(Default)]
 pub struct Chip8 {
@@ -12,22 +14,7 @@ pub struct Chip8 {
     stack_pointer: u8,
     stack: [u16; 16],
     frame_buffer: FrameBuffer,
-    v_0: u8,
-    v_1: u8,
-    v_2: u8,
-    v_3: u8,
-    v_4: u8,
-    v_5: u8,
-    v_6: u8,
-    v_7: u8,
-    v_8: u8,
-    v_9: u8,
-    v_a: u8,
-    v_b: u8,
-    v_c: u8,
-    v_d: u8,
-    v_e: u8,
-    v_f: u8,
+    v_registers: Registers,
 }
 
 impl Chip8 {
@@ -45,11 +32,15 @@ impl Chip8 {
     }
 
     pub fn run(&mut self) {
-        println!("Running");
+        let mut rng = thread_rng();
+
         while let Some(op_code) = self.next_opcode() {
             match op_code {
                 OpCode::Cls => self.frame_buffer.clear(),
                 OpCode::Jump(location) => self.program_counter = location,
+                OpCode::Random(register, k) => {
+                    self.v_registers.set(register, k & rng.gen_range(0..=0xFF))
+                }
             }
         }
     }
