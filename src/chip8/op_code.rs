@@ -6,6 +6,7 @@ use super::registers::VRegister;
 pub enum OpCode {
     Cls,
     Jump(u16),
+    LoadIndex(u16),
     Random(VRegister, u8),
 }
 
@@ -19,12 +20,13 @@ impl TryFrom<[u8; 2]> for OpCode {
             0x00E0 => Ok(OpCode::Cls),
             // TODO: Is the first 1 part of the jump address?
             0x1000..=0x1FFF => Ok(OpCode::Jump(bytes)),
+            0xA000..=0xAFFF => Ok(OpCode::LoadIndex(bytes & 0x0FFF)),
             0xC000..=0xCFFF => {
-                let register = VRegister::try_from((bytes >> 12) as u8);
+                let register = VRegister::try_from((bytes >> 8 & 0xF) as u8);
                 let k = bytes as u8;
                 Ok(OpCode::Random(register.unwrap(), k))
             }
-            _ => Err(format!("Invalid OpCode {:#04x}", bytes)), // TODO: Show the bytes
+            _ => Err(format!("Invalid OpCode {:#04x}", bytes)),
         }
     }
 }
@@ -47,8 +49,15 @@ mod tests {
     }
 
     #[test]
+    fn parse_load_index() {
+        let op_code = OpCode::try_from([0xAB, 0xCD]).unwrap();
+        assert!(matches!(op_code, OpCode::LoadIndex(0x0BCD)));
+    }
+
+    #[test]
     fn parse_random_byte() {
         let op_code = OpCode::try_from([0xc2, 0x12]).unwrap();
+        println!("{:?}", op_code);
         assert!(matches!(op_code, OpCode::Random(VRegister::V2, 0x12)));
     }
 }

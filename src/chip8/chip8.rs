@@ -41,6 +41,7 @@ impl Chip8 {
                 OpCode::Random(register, k) => {
                     self.v_registers.set(register, k & rng.gen_range(0..=0xFF))
                 }
+                OpCode::LoadIndex(value) => self.index = value,
             }
         }
     }
@@ -51,11 +52,29 @@ impl Chip8 {
         let least_significant_byte = self.memory.get(self.program_counter);
         self.program_counter += 1;
 
+        if most_significant_byte == 0 && least_significant_byte == 0 {
+            // Placeholder for now
+            return None;
+        }
+
         // TODO: Review how to crash on an invalid program
         Some(OpCode::try_from([most_significant_byte, least_significant_byte]).unwrap())
     }
 
     pub fn frame_buffer(&self) -> &FrameBuffer {
         &self.frame_buffer
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_load_index() {
+        let mut chip8 = Chip8::new();
+        chip8.load(vec![0xA1, 0x23].into_iter());
+        chip8.run();
+        assert_eq!(chip8.index, 0x0123);
     }
 }
