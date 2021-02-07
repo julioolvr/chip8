@@ -16,7 +16,7 @@ impl TryFrom<[u8; 2]> for OpCode {
             0x00E0 => Ok(OpCode::Cls),
             // TODO: Is the first 1 part of the jump address
             location if (0x1000..=0x1FFF).contains(&location) => Ok(OpCode::Jump(location)),
-            _ => Err(format!("Invalid OpCode {:#016b}", bytes)), // TODO: Show the bytes
+            _ => Err(format!("Invalid OpCode {:#04x}", bytes)), // TODO: Show the bytes
         }
     }
 }
