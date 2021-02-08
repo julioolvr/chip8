@@ -9,6 +9,7 @@ pub enum OpCode {
     LoadIndex(u16),
     Random(VRegister, u8),
     LoadDecimal(VRegister),
+    Fill(VRegister),
 }
 
 impl TryFrom<[u8; 2]> for OpCode {
@@ -22,12 +23,16 @@ impl TryFrom<[u8; 2]> for OpCode {
                 Ok(OpCode::LoadIndex(pack_u8(bytes) & 0x0FFF))
             }
             [msb, lsb] if (0xC0..=0xCF).contains(&msb) => {
-                let register = VRegister::try_from(msb & 0xF).unwrap();
+                let register = VRegister::try_from(msb & 0x0F).unwrap();
                 Ok(OpCode::Random(register, lsb))
             }
             [msb, 0x33] if (0xF0..=0xFF).contains(&msb) => {
-                let register = VRegister::try_from(msb & 0xF).unwrap();
+                let register = VRegister::try_from(msb & 0x0F).unwrap();
                 Ok(OpCode::LoadDecimal(register))
+            }
+            [msb, 0x65] if (0xF0..=0xFF).contains(&msb) => {
+                let register = VRegister::try_from(msb & 0x0F).unwrap();
+                Ok(OpCode::Fill(register))
             }
             _ => Err(format!("Invalid OpCode {:#02x}{:02x}", bytes[0], bytes[1])),
         }

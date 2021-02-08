@@ -15,7 +15,7 @@ impl Registers {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, PartialOrd)]
 pub enum VRegister {
     V0,
     V1,
@@ -84,4 +84,13 @@ impl From<VRegister> for usize {
             VF => 0xF,
         }
     }
+}
+
+pub fn all_registers() -> impl Iterator<Item = VRegister> {
+    use VRegister::*;
+
+    vec![
+        V0, V1, V2, V3, V4, V5, V6, V7, V8, V9, VA, VB, VC, VD, VE, VF,
+    ]
+    .into_iter()
 }

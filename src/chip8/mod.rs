@@ -9,4 +9,4 @@ mod registers;
 use frame_buffer::FrameBuffer;
 use memory::Memory;
 use op_code::OpCode;
-use registers::{Registers, VRegister};
+use registers::{all_registers, Registers};
