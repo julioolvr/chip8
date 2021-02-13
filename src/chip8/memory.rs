@@ -1,3 +1,5 @@
+use std::ops::Range;
+
 pub struct Memory([u8; 0x1000]);
 
 const FONT_BASE: u16 = 0;
@@ -9,6 +11,11 @@ impl Memory {
 
     pub fn set(&mut self, index: u16, value: u8) {
         self.0[index as usize] = value;
+    }
+
+    pub fn range(&self, range: Range<u16>) -> &[u8] {
+        let range = range.start as usize..range.end as usize;
+        &self.0[range]
     }
 
     pub fn index_of_char(&self, character: u8) -> u16 {

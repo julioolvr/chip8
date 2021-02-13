@@ -1,7 +1,7 @@
 use rand::prelude::*;
 use std::convert::TryFrom;
 
-use super::{all_registers, FrameBuffer, Memory, OpCode, Registers};
+use super::{all_registers, registers::VRegister, FrameBuffer, Memory, OpCode, Registers};
 
 #[derive(Default)]
 pub struct Chip8 {
@@ -65,6 +65,18 @@ impl Chip8 {
                     self.index = self.memory.index_of_char(value);
                 }
                 OpCode::SetRegister(register, value) => self.v_registers.set(register, value),
+                OpCode::Draw((x, y), length) => {
+                    let x = self.v_registers.get(x);
+                    let y = self.v_registers.get(y);
+                    let sprite = self.memory.range(self.index..self.index + length as u16);
+                    let turned_bit_off = self.frame_buffer.draw((x, y), sprite);
+
+                    if turned_bit_off {
+                        self.v_registers.set(VRegister::VF, 1);
+                    } else {
+                        self.v_registers.set(VRegister::VF, 0);
+                    }
+                }
             }
         }
     }
