@@ -28,60 +28,61 @@ impl Chip8 {
         }
     }
 
-    pub fn run(&mut self) {
-        debug!("Running...");
-
+    pub fn run_instruction(&mut self) {
         let mut rng = thread_rng();
 
-        while let Some(op_code) = self.next_opcode() {
-            trace!("Op: {:?}", op_code);
+        match self.next_opcode() {
+            Some(op_code) => {
+                trace!("Op: {:?}", op_code);
 
-            match op_code {
-                OpCode::Cls => self.frame_buffer.clear(),
-                OpCode::Jump(location) => self.program_counter = location,
-                OpCode::Random(register, k) => {
-                    self.v_registers.set(register, k & rng.gen_range(0..=0xFF))
-                }
-                OpCode::LoadIndex(value) => self.index = value,
-                OpCode::LoadDecimal(register) => {
-                    let value = self.v_registers.get(register);
-
-                    let hundreds = value / 100;
-                    let tens = value / 10 % 10;
-                    let ones = value % 10;
-
-                    self.memory.set(self.index, hundreds);
-                    self.memory.set(self.index + 1, tens);
-                    self.memory.set(self.index + 2, ones);
-                }
-                OpCode::Fill(end) => {
-                    for register in all_registers().take_while(|register| register <= &end) {
-                        self.v_registers.set(register, self.memory.get(self.index));
-                        self.index += 1;
+                match op_code {
+                    OpCode::Cls => self.frame_buffer.clear(),
+                    OpCode::Jump(location) => self.program_counter = location,
+                    OpCode::Random(register, k) => {
+                        self.v_registers.set(register, k & rng.gen_range(0..=0xFF))
                     }
-                }
-                OpCode::LoadCharacter(register) => {
-                    let value = self.v_registers.get(register);
-                    self.index = self.memory.index_of_char(value);
-                }
-                OpCode::SetRegister(register, value) => self.v_registers.set(register, value),
-                OpCode::Draw((x, y), length) => {
-                    let x = self.v_registers.get(x);
-                    let y = self.v_registers.get(y);
-                    let sprite = self.memory.range(self.index..self.index + length as u16);
-                    let turned_bit_off = self.frame_buffer.draw((x, y), sprite);
+                    OpCode::LoadIndex(value) => self.index = value,
+                    OpCode::LoadDecimal(register) => {
+                        let value = self.v_registers.get(register);
 
-                    if turned_bit_off {
-                        self.v_registers.set(VRegister::VF, 1);
-                    } else {
-                        self.v_registers.set(VRegister::VF, 0);
+                        let hundreds = value / 100;
+                        let tens = value / 10 % 10;
+                        let ones = value % 10;
+
+                        self.memory.set(self.index, hundreds);
+                        self.memory.set(self.index + 1, tens);
+                        self.memory.set(self.index + 2, ones);
                     }
-                }
-                OpCode::WaitForKeyPress(register) => {
-                    let input: u8 = 0xA; // TODO: Implement actual user input
-                    self.v_registers.set(register, input);
+                    OpCode::Fill(end) => {
+                        for register in all_registers().take_while(|register| register <= &end) {
+                            self.v_registers.set(register, self.memory.get(self.index));
+                            self.index += 1;
+                        }
+                    }
+                    OpCode::LoadCharacter(register) => {
+                        let value = self.v_registers.get(register);
+                        self.index = self.memory.index_of_char(value);
+                    }
+                    OpCode::SetRegister(register, value) => self.v_registers.set(register, value),
+                    OpCode::Draw((x, y), length) => {
+                        let x = self.v_registers.get(x);
+                        let y = self.v_registers.get(y);
+                        let sprite = self.memory.range(self.index..self.index + length as u16);
+                        let turned_bit_off = self.frame_buffer.draw((x, y), sprite);
+
+                        if turned_bit_off {
+                            self.v_registers.set(VRegister::VF, 1);
+                        } else {
+                            self.v_registers.set(VRegister::VF, 0);
+                        }
+                    }
+                    OpCode::WaitForKeyPress(register) => {
+                        let input: u8 = 0xA; // TODO: Implement actual user input
+                        self.v_registers.set(register, input);
+                    }
                 }
             }
+            None => return,
         }
     }
 

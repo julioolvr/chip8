@@ -1,6 +1,10 @@
 #[macro_use]
 extern crate log;
 
+use console_engine::pixel;
+use console_engine::Color;
+use console_engine::KeyCode;
+
 mod chip8;
 
 use chip8::Chip8;
@@ -14,16 +18,30 @@ fn main() {
     let rom = File::open("./roms/random_number.ch8").expect("Unable to open file");
     chip8.load(rom.bytes().map(|byte| byte.expect("Unable to read byte")));
 
-    chip8.run();
-    render(chip8.frame_buffer());
-}
+    let mut engine = console_engine::ConsoleEngine::init(64, 32, 60);
 
-fn render(buffer: &[u64; 32]) {
-    for row in buffer {
-        for n in (0..64).rev() {
-            print!("{}", if row >> n & 1 == 0 { "." } else { "X" });
+    loop {
+        engine.wait_frame();
+        engine.clear_screen();
+
+        chip8.run_instruction();
+
+        let rows: &[u64] = chip8.frame_buffer().as_ref();
+
+        for (y, row) in rows.iter().enumerate() {
+            for x in (0..64).rev() {
+                if row >> x & 1 == 0 {
+                    engine.set_pxl(64 - x, y as i32, pixel::pxl_fg('O', Color::Cyan));
+                } else {
+                    engine.set_pxl(64 - x, y as i32, pixel::pxl_fg('.', Color::Cyan));
+                }
+            }
         }
 
-        println!("");
+        if engine.is_key_pressed(KeyCode::Char('q')) {
+            break;
+        }
+
+        engine.draw();
     }
 }
