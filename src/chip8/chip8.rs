@@ -30,7 +30,11 @@ impl Chip8 {
         }
     }
 
-    pub fn run_instruction(&mut self, current_input: Option<InputKey>) {
+    pub fn run(&mut self) {
+        while self.run_instruction(None) {}
+    }
+
+    pub fn run_instruction(&mut self, current_input: Option<InputKey>) -> bool {
         let mut rng = thread_rng();
 
         match self.next_opcode() {
@@ -89,8 +93,10 @@ impl Chip8 {
                         }
                     }
                 }
+
+                true
             }
-            None => return,
+            None => false,
         }
     }
 
