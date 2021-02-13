@@ -1,10 +1,14 @@
+#[macro_use]
+extern crate log;
+
 mod chip8;
 
+use chip8::Chip8;
 use std::{fs::File, io::Read};
 
-use chip8::Chip8;
-
 fn main() {
+    env_logger::init();
+
     let mut chip8 = Chip8::new();
 
     let rom = File::open("./roms/random_number.ch8").expect("Unable to open file");

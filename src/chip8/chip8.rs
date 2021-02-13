@@ -29,6 +29,8 @@ impl Chip8 {
     }
 
     pub fn run(&mut self) {
+        debug!("Running...");
+
         let mut rng = thread_rng();
 
         while let Some(op_code) = self.next_opcode() {
