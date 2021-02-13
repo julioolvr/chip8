@@ -53,12 +53,14 @@ impl TryFrom<[u8; 2]> for OpCode {
     type Error = String;
 
     fn try_from(bytes: [u8; 2]) -> Result<Self, Self::Error> {
+        trace!("0x{:>02x}{:02x}", bytes[0], bytes[1]);
+
         match bytes {
             // OpCode::Cls
             [0x00, 0xE0] => Ok(OpCode::Cls),
 
             // OpCode::Jump
-            [msb, _] if (0x10..=0x1F).contains(&msb) => Ok(OpCode::Jump(pack_u8(bytes))),
+            [msb, _] if (0x10..=0x1F).contains(&msb) => Ok(OpCode::Jump(0x0FFF & pack_u8(bytes))),
 
             // OpCode::LoadIndex
             [msb, _] if (0xA0..=0xAF).contains(&msb) => {
@@ -133,7 +135,7 @@ mod tests {
     #[test]
     fn parse_jump() {
         let op_code = OpCode::try_from([0x10, 0xAA]).unwrap();
-        assert!(matches!(op_code, OpCode::Jump(0x10AA)));
+        assert!(matches!(op_code, OpCode::Jump(0x00AA)));
     }
 
     #[test]
