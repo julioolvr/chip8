@@ -10,6 +10,14 @@ impl Memory {
     pub fn set(&mut self, index: u16, value: u8) {
         self.0[index as usize] = value;
     }
+
+    pub fn index_of_char(&self, character: u8) -> u16 {
+        if character < 16 {
+            FONT_BASE + character as u16 * 5
+        } else {
+            unreachable!()
+        }
+    }
 }
 
 impl Default for Memory {

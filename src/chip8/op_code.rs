@@ -4,11 +4,34 @@ use super::registers::VRegister;
 
 #[derive(Debug)]
 pub enum OpCode {
+    /// Clear the display (`00E0`)
     Cls,
-    Jump(u16),
+
+    /// Set value of index register (`Annn`)
     LoadIndex(u16),
+
+    /// Jump to location (`Bnnn`)
+    Jump(u16),
+
+    /// Set a register to a random value (`Cxkk`)
+    ///
+    /// The randomly generated value is and-ed with the given `kk` value.
     Random(VRegister, u8),
+
+    /// Point index to the character corresponding to the value of the given register (`Fx29`)
+    LoadCharacter(VRegister),
+
+    /// Load decimal representation in memory (`Fx33`)
+    ///
+    /// Takes the decimal representation of the value in the given register and stores it in memory,
+    /// starting at the address pointed at by the index register for the hundreds, the next one for
+    /// the tens and the following one for the ones.
     LoadDecimal(VRegister),
+
+    /// Loads data from memory to V registers up to the given one (`Fx65`)
+    ///
+    /// Load values from memory, starting at the address pointed at by the index register, to the V
+    /// registers up until the given one.
     Fill(VRegister),
 }
 
@@ -25,6 +48,10 @@ impl TryFrom<[u8; 2]> for OpCode {
             [msb, lsb] if (0xC0..=0xCF).contains(&msb) => {
                 let register = VRegister::try_from(msb & 0x0F).unwrap();
                 Ok(OpCode::Random(register, lsb))
+            }
+            [msb, 0x29] if (0xF0..=0xFF).contains(&msb) => {
+                let register = VRegister::try_from(msb & 0x0F).unwrap();
+                Ok(OpCode::LoadCharacter(register))
             }
             [msb, 0x33] if (0xF0..=0xFF).contains(&msb) => {
                 let register = VRegister::try_from(msb & 0x0F).unwrap();

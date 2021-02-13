@@ -15,7 +15,7 @@ impl Registers {
     }
 }
 
-#[derive(Debug, PartialEq, PartialOrd)]
+#[derive(Debug, PartialEq, PartialOrd, Clone, Copy)]
 pub enum VRegister {
     V0,
     V1,
