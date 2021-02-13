@@ -1,7 +1,9 @@
 use rand::prelude::*;
 use std::convert::TryFrom;
 
-use super::{all_registers, registers::VRegister, FrameBuffer, Memory, OpCode, Registers};
+use super::{
+    all_registers, registers::VRegister, FrameBuffer, InputKey, Memory, OpCode, Registers,
+};
 
 #[derive(Default)]
 pub struct Chip8 {
@@ -28,7 +30,7 @@ impl Chip8 {
         }
     }
 
-    pub fn run_instruction(&mut self) {
+    pub fn run_instruction(&mut self, current_input: Option<InputKey>) {
         let mut rng = thread_rng();
 
         match self.next_opcode() {
@@ -77,8 +79,14 @@ impl Chip8 {
                         }
                     }
                     OpCode::WaitForKeyPress(register) => {
-                        let input: u8 = 0xA; // TODO: Implement actual user input
-                        self.v_registers.set(register, input);
+                        match current_input {
+                            Some(input) => self.v_registers.set(register, input.into()),
+                            None => {
+                                // For now, cheat by taking the program counter two steps back so it
+                                // will run this op again
+                                self.program_counter -= 2;
+                            }
+                        }
                     }
                 }
             }
