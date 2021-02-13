@@ -34,6 +34,8 @@ impl Chip8 {
         let mut rng = thread_rng();
 
         while let Some(op_code) = self.next_opcode() {
+            trace!("Op: {:?}", op_code);
+
             match op_code {
                 OpCode::Cls => self.frame_buffer.clear(),
                 OpCode::Jump(location) => self.program_counter = location,
@@ -62,6 +64,7 @@ impl Chip8 {
                     let value = self.v_registers.get(register);
                     self.index = self.memory.index_of_char(value);
                 }
+                OpCode::SetRegister(register, value) => self.v_registers.set(register, value),
             }
         }
     }
@@ -138,5 +141,13 @@ mod tests {
         chip8.run();
         // This test is tightly coupled to the memory addresses currently in use for the font
         assert_eq!(chip8.index, 55);
+    }
+
+    #[test]
+    fn test_set_register() {
+        let mut chip8 = Chip8::new();
+        chip8.load(vec![0x62, 0x29].into_iter());
+        chip8.run();
+        assert_eq!(chip8.v_registers.get(VRegister::V2), 0x29);
     }
 }

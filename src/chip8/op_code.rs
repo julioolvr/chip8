@@ -7,6 +7,9 @@ pub enum OpCode {
     /// Clear the display (`00E0`)
     Cls,
 
+    /// Set value of V register (`6XNN`)
+    SetRegister(VRegister, u8),
+
     /// Set value of index register (`Annn`)
     LoadIndex(u16),
 
@@ -40,27 +43,47 @@ impl TryFrom<[u8; 2]> for OpCode {
 
     fn try_from(bytes: [u8; 2]) -> Result<Self, Self::Error> {
         match bytes {
+            // OpCode::Cls
             [0x00, 0xE0] => Ok(OpCode::Cls),
+
+            // OpCode::Jump
             [msb, _] if (0x10..=0x1F).contains(&msb) => Ok(OpCode::Jump(pack_u8(bytes))),
+
+            // OpCode::LoadIndex
             [msb, _] if (0xA0..=0xAF).contains(&msb) => {
                 Ok(OpCode::LoadIndex(pack_u8(bytes) & 0x0FFF))
             }
+
+            // OpCode::Random
             [msb, lsb] if (0xC0..=0xCF).contains(&msb) => {
                 let register = VRegister::try_from(msb & 0x0F).unwrap();
                 Ok(OpCode::Random(register, lsb))
             }
+
+            // OpCode::LoadCharacter
             [msb, 0x29] if (0xF0..=0xFF).contains(&msb) => {
                 let register = VRegister::try_from(msb & 0x0F).unwrap();
                 Ok(OpCode::LoadCharacter(register))
             }
+
+            // OpCode::LoadDecimal
             [msb, 0x33] if (0xF0..=0xFF).contains(&msb) => {
                 let register = VRegister::try_from(msb & 0x0F).unwrap();
                 Ok(OpCode::LoadDecimal(register))
             }
+
+            // OpCode::Fill
             [msb, 0x65] if (0xF0..=0xFF).contains(&msb) => {
                 let register = VRegister::try_from(msb & 0x0F).unwrap();
                 Ok(OpCode::Fill(register))
             }
+
+            // OpCode::SetRegister
+            [msb, lsb] if (0x60..=0x6F).contains(&msb) => {
+                let register = VRegister::try_from(msb & 0x0F).unwrap();
+                Ok(OpCode::SetRegister(register, lsb))
+            }
+
             _ => Err(format!("Invalid OpCode {:#02x}{:02x}", bytes[0], bytes[1])),
         }
     }
