@@ -29,6 +29,9 @@ pub enum OpCode {
     /// the edge of the screen.
     Draw((VRegister, VRegister), u8),
 
+    /// Wait for key press and store the value of the key in the given V register (`Fx0A`)
+    WaitForKeyPress(VRegister),
+
     /// Point index to the character corresponding to the value of the given register (`Fx29`)
     LoadCharacter(VRegister),
 
@@ -93,12 +96,18 @@ impl TryFrom<[u8; 2]> for OpCode {
             }
 
             // OpCode::Draw
-            [msb, lsb] if (0xD0..0xDF).contains(&msb) => {
+            [msb, lsb] if (0xD0..=0xDF).contains(&msb) => {
                 let register_x = VRegister::try_from(msb & 0x0F).unwrap();
                 let register_y = VRegister::try_from((lsb & 0xF0) >> 4).unwrap();
                 let sprite_length = lsb & 0x0F;
 
                 Ok(OpCode::Draw((register_x, register_y), sprite_length))
+            }
+
+            // OpCode::WaitForKeyPress
+            [msb, 0x0A] if (0xF0..=0xFF).contains(&msb) => {
+                let register = VRegister::try_from(msb & 0x0F).unwrap();
+                Ok(OpCode::WaitForKeyPress(register))
             }
 
             _ => Err(format!("Invalid OpCode {:#02x}{:02x}", bytes[0], bytes[1])),

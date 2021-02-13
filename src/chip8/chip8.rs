@@ -77,6 +77,10 @@ impl Chip8 {
                         self.v_registers.set(VRegister::VF, 0);
                     }
                 }
+                OpCode::WaitForKeyPress(register) => {
+                    let input: u8 = 0xA; // TODO: Implement actual user input
+                    self.v_registers.set(register, input);
+                }
             }
         }
     }
