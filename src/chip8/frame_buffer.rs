@@ -34,6 +34,14 @@ impl FrameBuffer {
     pub fn clear(&mut self) {
         *self = Default::default();
     }
+
+    pub fn get_screen_width(&self) -> usize {
+        DISPLAY_WIDTH
+    }
+
+    pub fn get_screen_height(&self) -> usize {
+        DISPLAY_HEIGHT
+    }
 }
 
 impl Deref for FrameBuffer {

@@ -118,6 +118,14 @@ impl Chip8 {
     pub fn frame_buffer(&self) -> &FrameBuffer {
         &self.frame_buffer
     }
+
+    pub fn get_screen_width(&self) -> usize {
+        self.frame_buffer().get_screen_width()
+    }
+
+    pub fn get_screen_height(&self) -> usize {
+        self.frame_buffer().get_screen_height()
+    }
 }
 
 #[cfg(test)]
