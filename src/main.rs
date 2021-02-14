@@ -67,9 +67,9 @@ fn main() {
         for (y, row) in rows.iter().enumerate() {
             for x in (0..64).rev() {
                 if row >> x & 1 == 0 {
-                    engine.set_pxl(64 - x, y as i32, pixel::pxl_fg('O', Color::Cyan));
+                    engine.set_pxl(64 - x, y as i32, pixel::pxl_fg(' ', Color::Cyan));
                 } else {
-                    engine.set_pxl(64 - x, y as i32, pixel::pxl_fg('.', Color::Cyan));
+                    engine.set_pxl(64 - x, y as i32, pixel::pxl_fg('X', Color::Cyan));
                 }
             }
         }
