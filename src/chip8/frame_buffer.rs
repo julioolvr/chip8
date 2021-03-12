@@ -4,8 +4,10 @@ const DISPLAY_WIDTH: usize = 64;
 const DISPLAY_HEIGHT: usize = 32;
 const SPRITE_WIDTH: usize = 8;
 
+pub type FrameBufferMemory = [u64; DISPLAY_HEIGHT];
+
 #[derive(Default)]
-pub struct FrameBuffer([u64; DISPLAY_HEIGHT]);
+pub struct FrameBuffer(FrameBufferMemory);
 
 impl FrameBuffer {
     pub fn draw(&mut self, (x, y): (u8, u8), sprite: &[u8]) -> bool {

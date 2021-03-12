@@ -6,12 +6,15 @@ use console_engine::{pixel, Color, ConsoleEngine, KeyCode};
 mod chip8;
 
 use chip8::{Chip8, InputKey};
-use std::{fs::File, io::Read};
+use std::{fs::File, io::Read, thread};
 
 fn main() {
     env_logger::init();
 
-    let mut chip8 = Chip8::new();
+    let (display_tx, display_rx) = std::sync::mpsc::channel();
+    let (input_tx, input_rx) = std::sync::mpsc::channel();
+
+    let mut chip8 = Chip8::new(display_tx, input_rx);
 
     let rom = File::open("./roms/random_number.ch8").expect("Unable to open file");
     chip8.load(rom.bytes().map(|byte| byte.expect("Unable to read byte")));
@@ -24,14 +27,31 @@ fn main() {
     let mut stopwatch = std::time::Instant::now();
     let mut last_fps = 0;
 
+    let mut last_buffer = (*chip8.frame_buffer()).clone();
+
+    thread::spawn(move || {
+        chip8.run();
+    });
+
     loop {
+        if engine.is_key_pressed(KeyCode::Char('q')) {
+            break;
+        }
+
+        if let Some(key) = get_current_key(&engine) {
+            input_tx.send(key.into()).unwrap();
+        }
+
         engine.wait_frame();
+
+        let draw_instruction = display_rx.try_recv();
+
+        if let Ok(draw_instruction) = draw_instruction {
+            last_buffer = draw_instruction.buffer().clone();
+        }
+
         engine.clear_screen();
 
-        chip8.run_instruction(get_current_key(&engine));
-
-        let rows: &[u64] = chip8.frame_buffer().as_ref();
-
         engine.line(
             0,
             0,
@@ -64,7 +84,7 @@ fn main() {
             pixel::pxl_fg('#', Color::Grey),
         );
 
-        for (y, row) in rows.iter().enumerate() {
+        for (y, row) in last_buffer.iter().enumerate() {
             for x in 0..screen_width {
                 if row >> (screen_width - x - 1) & 1 == 0 {
                     engine.set_pxl(x as i32 + 1, y as i32 + 1, pixel::pxl_fg(' ', Color::Cyan));
@@ -72,10 +92,6 @@ fn main() {
                     engine.set_pxl(x as i32 + 1, y as i32 + 1, pixel::pxl_fg('X', Color::Cyan));
                 }
             }
-        }
-
-        if engine.is_key_pressed(KeyCode::Char('q')) {
-            break;
         }
 
         engine.print(0, screen_height as i32 + 2, "         ");

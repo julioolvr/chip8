@@ -1,3 +1,5 @@
+use super::InputInstruction;
+
 pub enum InputKey {
     Key0,
     Key1,
@@ -37,5 +39,11 @@ impl Into<u8> for InputKey {
             InputKey::KeyE => 0xE,
             InputKey::KeyF => 0xF,
         }
+    }
+}
+
+impl Into<InputInstruction> for InputKey {
+    fn into(self) -> InputInstruction {
+        InputInstruction::new(self)
     }
 }

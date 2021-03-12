@@ -1,11 +1,16 @@
 use rand::prelude::*;
-use std::convert::TryFrom;
-
-use super::{
-    all_registers, registers::VRegister, FrameBuffer, InputKey, Memory, OpCode, Registers,
+use std::{
+    convert::TryFrom,
+    sync::mpsc::{Receiver, Sender},
 };
 
-#[derive(Default)]
+use super::{
+    all_registers,
+    io::{DrawInstruction, InputInstruction},
+    registers::VRegister,
+    FrameBuffer, InputKey, Memory, OpCode, Registers,
+};
+
 pub struct Chip8 {
     memory: Memory,
     index: u16,
@@ -14,13 +19,22 @@ pub struct Chip8 {
     stack: [u16; 16],
     frame_buffer: FrameBuffer,
     v_registers: Registers,
+    display_tx: Sender<DrawInstruction>,
+    input_rx: Receiver<InputInstruction>,
 }
 
 impl Chip8 {
-    pub fn new() -> Chip8 {
+    pub fn new(display_tx: Sender<DrawInstruction>, input_rx: Receiver<InputInstruction>) -> Chip8 {
         Chip8 {
+            memory: Memory::default(),
+            index: 0,
             program_counter: 0x200,
-            ..Default::default()
+            stack_pointer: 0,
+            stack: [0; 16],
+            frame_buffer: FrameBuffer::default(),
+            v_registers: Registers::default(),
+            display_tx,
+            input_rx,
         }
     }
 
@@ -81,16 +95,15 @@ impl Chip8 {
                         } else {
                             self.v_registers.set(VRegister::VF, 0);
                         }
+
+                        self.display_tx
+                            .send(DrawInstruction::new(self.frame_buffer.clone()))
+                            .unwrap();
                     }
                     OpCode::WaitForKeyPress(register) => {
-                        match current_input {
-                            Some(input) => self.v_registers.set(register, input.into()),
-                            None => {
-                                // For now, cheat by taking the program counter two steps back so it
-                                // will run this op again
-                                self.program_counter -= 2;
-                            }
-                        }
+                        let instruction = self.input_rx.recv().unwrap();
+                        let input: InputKey = instruction.into();
+                        self.v_registers.set(register, input.into());
                     }
                 }
 
@@ -134,9 +147,18 @@ mod tests {
 
     use super::*;
 
+    fn build_chip() -> Chip8 {
+        use std::sync::mpsc::channel;
+
+        let (tx, _) = channel();
+        let (_, rx) = channel();
+
+        Chip8::new(tx, rx)
+    }
+
     #[test]
     fn test_load_index() {
-        let mut chip8 = Chip8::new();
+        let mut chip8 = build_chip();
         chip8.load(vec![0xA1, 0x23].into_iter());
         chip8.run();
         assert_eq!(chip8.index, 0x0123);
@@ -144,7 +166,7 @@ mod tests {
 
     #[test]
     fn test_load_binary() {
-        let mut chip8 = Chip8::new();
+        let mut chip8 = build_chip();
         chip8.v_registers.set(VRegister::V2, 234);
         chip8.load(vec![0xA0, 0xFB, 0xF2, 0x33].into_iter());
         chip8.run();
@@ -155,7 +177,7 @@ mod tests {
 
     #[test]
     fn test_fill_registers() {
-        let mut chip8 = Chip8::new();
+        let mut chip8 = build_chip();
         chip8.index = 0x300;
         chip8.memory.set(0x300, 12);
         chip8.memory.set(0x301, 34);
@@ -174,7 +196,7 @@ mod tests {
 
     #[test]
     fn test_load_character() {
-        let mut chip8 = Chip8::new();
+        let mut chip8 = build_chip();
         chip8.v_registers.set(VRegister::V2, 0xB);
         chip8.load(vec![0xF2, 0x29].into_iter());
         chip8.run();
@@ -184,7 +206,7 @@ mod tests {
 
     #[test]
     fn test_set_register() {
-        let mut chip8 = Chip8::new();
+        let mut chip8 = build_chip();
         chip8.load(vec![0x62, 0x29].into_iter());
         chip8.run();
         assert_eq!(chip8.v_registers.get(VRegister::V2), 0x29);
